@@ -52,21 +52,11 @@
         <div class="row">
             <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-dark text-white sidebar collapse" data-simplebar>
                 <div class="sidebar-inner px-4 pt-3">
-                    <div class="user-card d-flex d-md-none align-items-center justify-content-between justify-content-md-center pb-4">
-                        <div class="d-flex align-items-center">
-                            <div class="user-avatar lg-avatar me-4">
-                                <img src="{{ url_for('static', filename='user-profile.png') }}" class="card-img-top rounded-circle border-white" alt="Bonnie Green">
-                            </div>
-                            <div class="d-block">
-                                <h2 class="h6">{{ session.name }}</h2>
-                                <a href="#" onclick="return funLogout()" class="btn btn-secondary text-dark btn-xs"><span class="me-2"><span class="fas fa-sign-out-alt"></span></span>Logout</a>
-                            </div>
-                        </div>
-                        <div class="collapse-close d-md-none">
-                            <a href="#sidebarMenu" class="fas fa-times" data-toggle="collapse" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="true" aria-label="Toggle navigation"></a>
-                        </div>
-                    </div>
-
+                    <!-- User Card -->
+                    <ul><br></ul>
+            <ul class="nav flex-column pt-3 pt-md-0"><p class="h6">{{ session.name }}</p>
+            </ul>
+            <li role="separator" class="dropdown-divider mt-4 mb-3 border-black"></li>
                     <ul class="nav flex-column pt-3 pt-md-0">
                         <li class="nav-item">
                             <a href="/create-test" class="nav-link">
@@ -107,24 +97,14 @@
                                 <span class="sidebar-text">Exam History</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="/livemonitoringtid" class="nav-link">
-                                <span class="sidebar-icon"><span class="fas fa-video"></span></span>
-                                <span class="sidebar-text">Live Monitoring</span>
-                            </a>
-                        </li>
+                        
                         <li class="nav-item">
                             <a href="/viewstudentslogs" class="nav-link">
                                 <span class="sidebar-icon"><span class="fas fa-binoculars"></span></span>
                                 <span class="sidebar-text">Student Monitoring</span>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="/insertmarkstid" class="nav-link">
-                                <span class="sidebar-icon"><span class="fas fa-spell-check"></span></span>
-                                <span class="sidebar-text">Insert Marks</span>
-                            </a>
-                        </li>
+                        
                         <li class="nav-item">
                             <a href="/publish-results-testid" class="nav-link">
                                 <span class="sidebar-icon"><span class="fas fa-clipboard-check"></span></span>
@@ -138,17 +118,19 @@
                             </a>
                         </li>
                         <li role="separator" class="dropdown-divider mt-4 mb-3 border-black"></li>
-                        <li class="nav-item">
+                        <li class="nav-item ">
                             <a href="/report_professor" class="nav-link">
-                                <span class="sidebar-icon"><span class="fas fa-bug"></span></span>
-                                <span class="sidebar-text">Report Problems</span>
+                              <span class="sidebar-icon"><span class="fas fa-bug"></span></span>
+                              <span class="sidebar-text">Report Problems</span>
                             </a>
-                        </li>
+                          </li>
                         <li class="nav-item">
                             <a href="/changepassword_professor" class="nav-link d-flex align-items-center">
                                 <span class="sidebar-icon"><span class="fas fa-key"></span></span>
                                 <span class="sidebar-text">Change Password</span>
                             </a>
+                        </li>
+                        <li><br>
                         </li>
                         <li class="nav-item"><a href="/logout"  class="btn btn-secondary d-flex align-items-center justify-content-center">
                           <span class="sidebar-icon"><span class="fas fa-sign-out-alt"></span></span>
@@ -161,7 +143,7 @@
 
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">Dashboard</h1>
+                    <h1 class="h2">Professor Dashboard</h1>
                 </div>
                 <div class="container">
                     {% include 'includes/_messages.html' %}
@@ -169,12 +151,12 @@
                 </div>
                 <footer id="sticky-footer" class="py-4">
                     <div class="d-flex text-center justify-content-center align-items-center" role="contentinfo">
-                        <p class="font-weight-bold font-medium mb-0">Copyright © MyProctor.ai
+                        <p class="font-weight-bold font-medium mb-0">Copyright © AITM EXAM SYSTEM
                             <span class="current-year"><script>document.write(new Date().getFullYear())</script></span>. All rights reserved.
                         </p>
                     </div><br>
                     <div class="d-flex text-center justify-content-center align-items-center" role="contentinfo">
-                        <p class="font-weight-bold font-small mb-0"><span><a href="https://www.narenderkeswani.com/">Made with &#128151 By NARENDER KESWANI</a></span></p>
+                        <p class="font-weight-bold font-small mb-0"><span><a href="https://aitmbgm.ac.in/">Made with AITM STUDENTS</a></span></p>
                     </div>
                 </footer>
             </main>
