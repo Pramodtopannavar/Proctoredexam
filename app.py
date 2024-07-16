@@ -826,6 +826,36 @@ def disptests(email):
 		flash('You are not authorized', 'danger')
 		return redirect(url_for('professor_index'))
 
+@app.route('/<email>/<testid>/share_details', methods=['GET','POST'])
+@user_role_professor
+def share_details(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT * from teachers where test_id = %s and email = %s', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	return render_template("share_details.html", callresults = callresults)
+
+@app.route('/share_details_emails', methods=['GET','POST'])
+@user_role_professor
+def share_details_emails():
+	if request.method == 'POST':
+		sender="pramodtopananvar"
+		tid = request.form['tid']
+		subject = request.form['subject']
+		topic = request.form['topic']
+		duration = request.form['duration']
+		start = request.form['start']
+		end = request.form['end']
+		password = request.form['password']
+		neg_marks = request.form['neg_marks']
+		calc = request.form['calc']
+		emailssharelist = request.form['emailssharelist']
+		msg1 = Message('EXAM DETAILS - AITM EXAM SYSTEM', sender = sender, recipients = [emailssharelist])
+		msg1.body = " ".join(["EXAM-ID:", tid, "SUBJECT:", subject, "TOPIC:", topic, "DURATION:", duration, "START", start, "END", end, "PASSWORD", password, "NEGATIVE MARKS in %:", neg_marks,"CALCULATOR ALLOWED:",calc ]) 
+		mail.send(msg1)
+		flash('Emails sended sucessfully!', 'success')
+	return render_template('share_details.html')
+
 ############################################################
 
 
@@ -837,7 +867,8 @@ def examtypecheck(tidoption):
 	return callresults
 
 
-
+####################################
+#############student monitoring##################
 @app.route('/viewstudentslogs', methods=['GET'])
 @user_role_professor
 def viewstudentslogs():
@@ -849,6 +880,20 @@ def viewstudentslogs():
 		return render_template("viewstudentslogs.html", cresults = cresults)
 	else:
 		return render_template("viewstudentslogs.html", cresults = None)
+
+@app.route('/displaystudentsdetails', methods=['GET','POST'])
+@user_role_professor
+def displaystudentsdetails():
+	if request.method == 'POST':
+		tidoption = request.form['choosetid']
+		cur = mysql.connection.cursor()
+		cur.execute('SELECT DISTINCT email,test_id from proctoring_log where test_id = %s', [tidoption])
+		callresults = cur.fetchall()
+		cur.close()
+		return render_template("displaystudentsdetails.html", callresults = callresults)
+
+
+#######################################################
 
 @app.route('/insertmarkstid', methods=['GET'])
 @user_role_professor
@@ -869,16 +914,7 @@ def insertmarkstid():
 	else:
 		return render_template("insertmarkstid.html", cresults = None)
 
-@app.route('/displaystudentsdetails', methods=['GET','POST'])
-@user_role_professor
-def displaystudentsdetails():
-	if request.method == 'POST':
-		tidoption = request.form['choosetid']
-		cur = mysql.connection.cursor()
-		cur.execute('SELECT DISTINCT email,test_id from proctoring_log where test_id = %s', [tidoption])
-		callresults = cur.fetchall()
-		cur.close()
-		return render_template("displaystudentsdetails.html", callresults = callresults)
+
 
 @app.route('/insertmarksdetails', methods=['GET','POST'])
 @user_role_professor
@@ -1051,34 +1087,9 @@ def wineventstudentslogs(testid,email):
 	callresults = displaywinstudentslogs(testid,email)
 	return render_template("wineventstudentlog.html", testid = testid, email = email, callresults = callresults)
 
-@app.route('/<email>/<testid>/share_details', methods=['GET','POST'])
-@user_role_professor
-def share_details(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT * from teachers where test_id = %s and email = %s', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	return render_template("share_details.html", callresults = callresults)
 
-@app.route('/share_details_emails', methods=['GET','POST'])
-@user_role_professor
-def share_details_emails():
-	if request.method == 'POST':
-		tid = request.form['tid']
-		subject = request.form['subject']
-		topic = request.form['topic']
-		duration = request.form['duration']
-		start = request.form['start']
-		end = request.form['end']
-		password = request.form['password']
-		neg_marks = request.form['neg_marks']
-		calc = request.form['calc']
-		emailssharelist = request.form['emailssharelist']
-		msg1 = Message('EXAM DETAILS - MyProctor.ai', sender = sender, recipients = [emailssharelist])
-		msg1.body = " ".join(["EXAM-ID:", tid, "SUBJECT:", subject, "TOPIC:", topic, "DURATION:", duration, "START", start, "END", end, "PASSWORD", password, "NEGATIVE MARKS in %:", neg_marks,"CALCULATOR ALLOWED:",calc ]) 
-		mail.send(msg1)
-		flash('Emails sended sucessfully!', 'success')
-	return render_template('share_details.html')
+
+
 
 @app.route("/publish-results-testid", methods=['GET','POST'])
 @user_role_professor

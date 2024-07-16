@@ -16,47 +16,47 @@
                                 {% for res in callresults%}
                 <tr>
                 <td scope="col" >TEST ID</td>
-                    <td>{{res['test_id']}}</td>
+                    <td>{{res[2]}}</td>
                     <input type="hidden" name="tid" value="{{res['test_id']}}">
                 </tr>
                 <tr>
                     <td scope="col" >SUBJECT</td>
                     <input type="hidden" name="subject" value="{{res['subject']}}">
-                    <td>{{res['subject']}}</td>
+                    <td>{{res[9]}}</td>
                 </tr>
                 <tr>
                     <td  scope="col" >TOPIC</td>
                     <input type="hidden" name="topic" value="{{res['topic']}}">
-                    <td>{{res['topic']}}</td>
+                    <td>{{res[10]}}</td>
                 </tr>
                 <tr>
                     <td  scope="col" >DURATION</td>
                     <input type="hidden" name="duration" value="{{res['duration']}}">
-                    <td>{{res['duration']}} sec</td>
+                    <td>{{res[6]}} sec</td>
                 </tr>
                 <tr>
                     <td  scope="col" >START</td>
                     <input type="hidden" name="start" value="{{res['start']}}">
-                    <td>{{res['start']}}</td>
+                    <td>{{res[4]}}</td>
                 </tr>
                 <tr>
                     <td scope="col" >END</td>
                     <input type="hidden" name="end" value="{{res['end']}}">
-                    <td>{{res['end']}}</td>
+                    <td>{{res[5]}}</td>
                 </tr>
                 <tr>
                     <td  scope="col" >PASSWORD</td>
                     <input type="hidden" name="password" value="{{res['password']}}">
-                    <td>{{res['password']}}</td>
+                    <td>{{res[8]}}</td>
                 </tr>
                 <tr>
                     <td  scope="col" >NEGATIVE MARKS</td>
                     <input type="hidden" name="neg_marks" value="{{res['neg_marks']}}">
-                    <td>{{res['neg_marks']}} %</td>
+                    <td>{{res[11]}} %</td>
                 </tr>
                 <tr>
                     <td  scope="col" >CALCULATOR ALLOWED</td>
-                    <td>{% if(res['calc'] == 1) %} 
+                    <td>{% if(res[12] == 1) %} 
                         <input type="hidden" name="calc" value="YES">
                         YES {% else %}
                         <input type="hidden" name="calc" value="NO">
