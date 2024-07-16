@@ -275,7 +275,7 @@ def lostpassword():
 			sesOTPfp = generateOTP()
 			session['tempOTPfp'] = sesOTPfp
 			session['seslpemail'] = lpemail
-			msg1 = Message('MyProctor.ai - OTP Verification for Lost Password', sender = sender, recipients = [lpemail])
+			msg1 = Message('AITM EXAM SYSTEM - OTP Verification for Lost Password', sender = sender, recipients = [lpemail])
 			msg1.body = "Your OTP Verfication code for reset password is "+sesOTPfp+"."
 			mail.send(msg1)
 			return redirect(url_for('verifyOTPfp')) 
@@ -295,6 +295,7 @@ def verifyOTPfp():
 @app.route('/lpnewpwd', methods=['GET','POST'])
 def lpnewpwd():
 	if request.method == 'POST':
+		sender="pramodtopannavar"
 		npwd = request.form['npwd']
 		cpwd = request.form['cpwd']
 		slpemail = session['seslpemail']
@@ -304,7 +305,10 @@ def lpnewpwd():
 			mysql.connection.commit()
 			cur.close()
 			session.clear()
-			return render_template('login.html',success="Your password was successfully changed.")
+			msg1 = Message('AITM EXAM SYSTEM - NEW PASSWORD', sender = sender, recipients = [slpemail])
+			msg1.body = "Successfully changed the password New passowrd: "+npwd+"."
+			mail.send(msg1)
+			return redirect(url_for('login'))
 		else:
 			return render_template('login.html',error="Password doesn't matched.")
 	return render_template('lpnewpwd.html')
@@ -324,10 +328,10 @@ def contact():
         cemail = request.form['cemail']
         cquery = request.form['cquery']
         
-        msg1 = Message('Hello', sender=sender, recipients=[cemail])
+        msg1 = Message('AITM EXAM SYSTEM', sender=sender, recipients=[cemail])
         msg1.body = "YOUR QUERY WILL BE PROCESSED WITHIN 24 HOURS"
         
-        msg2 = Message('Hello', sender=sender, recipients=[careEmail])
+        msg2 = Message('AITM EXAM SYSTEM', sender=sender, recipients=[careEmail])
         msg2.body = " ".join(["NAME:", cname, "EMAIL:", cemail, "QUERY:", cquery])
         
         mail.send(msg1)
@@ -345,7 +349,7 @@ def logout():
 	mysql.connection.commit()
 	if lbr > 0:
 		session.clear()
-		return render_template('index.html')
+		return redirect(url_for('login'))
 	else:
 		return "error"
 #########################################
@@ -575,7 +579,8 @@ def create_test():
 			return redirect(url_for('professor_index'))
 	return render_template('create_test.html' , form = form)
 
-
+#######################################################
+############## DELETE QUESTIONS#####################
 @app.route('/deltidlist', methods=['GET'])
 @user_role_professor
 def deltidlist():
@@ -584,12 +589,12 @@ def deltidlist():
 	if results > 0:
 		cresults = cur.fetchall()
 		now = datetime.now()
-		now = now.strftime("%Y-%m-%d %H:%M:%S")
-		now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+		
 		testids = []
 		for a in cresults:
-			if datetime.strptime(str(a['start']),"%Y-%m-%d %H:%M:%S") > now:
-				testids.append(a['test_id'])
+			start_date_str = str(a[4]) 
+			if datetime.strptime(start_date_str,"%Y-%m-%d %H:%M:%S") > now:
+				testids.append(a[2])
 		cur.close()
 		return render_template("deltidlist.html", cresults = testids)
 	else:
@@ -598,32 +603,23 @@ def deltidlist():
 @app.route('/deldispques', methods=['GET','POST'])
 @user_role_professor
 def deldispques():
-	if request.method == 'POST':
-		tidoption = request.form['choosetid']
-		et = examtypecheck(tidoption)
-		if et['test_type'] == "objective":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,session['uid']))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("deldispques.html", callresults = callresults, tid = tidoption)
-		elif et['test_type'] == "subjective":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT * from longqa where test_id = %s and uid = %s', (tidoption,session['uid']))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("deldispquesLQA.html", callresults = callresults, tid = tidoption)
-		elif et['test_type'] == "practical":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT * from practicalqa where test_id = %s and uid = %s', (tidoption,session['uid']))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("deldispquesPQA.html", callresults = callresults, tid = tidoption)
-		else:
-			flash("Some Error Occured!")
-			return redirect(url_for('/deltidlist'))
+    if request.method == 'POST':
+        tidoption = request.form['choosetid']
+        et = examtypecheck(tidoption)
+        if et[0] == "objective":
+            cur = mysql.connection.cursor()
+            cur.execute('SELECT * FROM questions WHERE test_id = %s AND uid = %s', (tidoption, session['uid']))
+            callresults = cur.fetchall()
+            cur.close()
+            print("DEBUG: callresults =", callresults)  # Add this line to debug
+            return render_template("deldispques.html", callresults=callresults, tid=tidoption)
+        else:
+            flash("This feature is only available for objective type exams.")
+            return redirect(url_for('deltidlist'))
+    else:
+        return redirect(url_for('deltidlist'))
 
-@app.route('/delete_questions/<testid>', methods=['GET', 'POST'])
+@app.route('/delete_questions/<int:testid>', methods=['GET', 'POST'])
 @user_role_professor
 def delete_questions(testid):
 	et = examtypecheck(testid)
@@ -705,6 +701,9 @@ def del_qid(testid, qid):
 	else:
 		return redirect(url_for('/deldispques'))
 
+##############################################################
+##############UPDATE QUESTIONS############################
+
 @app.route('/updatetidlist', methods=['GET'])
 @user_role_professor
 def updatetidlist():
@@ -713,20 +712,16 @@ def updatetidlist():
     if results > 0:
         cresults = cur.fetchall()
         now = datetime.now()
+		
         testids = []
-        for row in cresults:
-            try:
-                start_time = datetime.strptime(row[3], "%Y-%m-%d %H:%M:%S")  # Assuming 'start' is the fourth column
-                if start_time > now:
-                    testids.append(row[2])  # Assuming 'test_id' is the third column
-            except ValueError as e:
-                # Handle datetime parsing error, you can log or skip the row
-                print(f"Error parsing datetime for row: {row}, Error: {e}")
-        
+        for a in cresults:
+            start_date_str = str(a[4]) 
+            if datetime.strptime(start_date_str,"%Y-%m-%d %H:%M:%S") > now:
+            	testids.append(a[2])
         cur.close()
-        return render_template("updatetidlist.html", cresults=testids)
+        return render_template("updatetidlist.html", cresults = testids)
     else:
-        return render_template("updatetidlist.html", cresults=None)
+        return render_template("updatetidlist.html", cresults = None)
 
 
 @app.route('/updatedispques', methods=['GET','POST'])
@@ -735,24 +730,13 @@ def updatedispques():
 	if request.method == 'POST':
 		tidoption = request.form['choosetid']
 		et = examtypecheck(tidoption)
-		if et['test_type'] == "objective":
+		if et[0] == "objective":
 			cur = mysql.connection.cursor()
 			cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,session['uid']))
 			callresults = cur.fetchall()
 			cur.close()
 			return render_template("updatedispques.html", callresults = callresults)
-		elif et['test_type'] == "subjective":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT * from longqa where test_id = %s and uid = %s', (tidoption,session['uid']))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("updatedispquesLQA.html", callresults = callresults)
-		elif et['test_type'] == "practical":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT * from practicalqa where test_id = %s and uid = %s', (tidoption,session['uid']))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("updatedispquesPQA.html", callresults = callresults)
+		
 		else:
 			flash('Error Occured!')
 			return redirect(url_for('updatetidlist'))
@@ -784,50 +768,10 @@ def update_quiz(testid, qid):
 		flash('ERROR  OCCURED.', 'error')
 		return redirect(url_for('updatetidlist'))
 
-@app.route('/updateLQA/<testid>/<qid>', methods=['GET','POST'])
-@user_role_professor
-def update_lqa(testid, qid):
-	if request.method == 'GET':
-		cur = mysql.connection.cursor()
-		cur.execute('SELECT * FROM longqa where test_id = %s and qid =%s and uid = %s', (testid,qid,session['uid']))
-		uresults = cur.fetchall()
-		mysql.connection.commit()
-		return render_template("updateQuestionsLQA.html", uresults=uresults)
-	if request.method == 'POST':
-		ques = request.form['ques']
-		markso = request.form['mko']
-		cur = mysql.connection.cursor()
-		cur.execute('UPDATE longqa SET q = %s, marks = %s where test_id = %s and qid = %s and uid = %s', (ques,markso,testid,qid,session['uid']))
-		cur.connection.commit()
-		flash('Updated successfully.', 'success')
-		cur.close()
-		return redirect(url_for('updatetidlist'))
-	else:
-		flash('ERROR  OCCURED.', 'error')
-		return redirect(url_for('updatetidlist'))
+###################################################################
 
-@app.route('/updatePQA/<testid>/<qid>', methods=['GET','POST'])
-@user_role_professor
-def update_PQA(testid, qid):
-	if request.method == 'GET':
-		cur = mysql.connection.cursor()
-		cur.execute('SELECT * FROM practicalqa where test_id = %s and qid =%s and uid = %s', (testid,qid,session['uid']))
-		uresults = cur.fetchall()
-		mysql.connection.commit()
-		return render_template("updateQuestionsPQA.html", uresults=uresults)
-	if request.method == 'POST':
-		ques = request.form['ques']
-		markso = request.form['mko']
-		cur = mysql.connection.cursor()
-		cur.execute('UPDATE practicalqa SET q = %s, marks = %s where test_id = %s and qid = %s and uid = %s', (ques,markso,testid,qid,session['uid']))
-		cur.connection.commit()
-		flash('Updated successfully.', 'success')
-		cur.close()
-		return redirect(url_for('updatetidlist'))
-	else:
-		flash('ERROR  OCCURED.', 'error')
-		return redirect(url_for('updatetidlist'))
-
+################################################################
+####### VIEW QUESTIONS ##########################################
 @app.route('/viewquestions', methods=['GET'])
 @user_role_professor
 def viewquestions():
@@ -840,21 +784,13 @@ def viewquestions():
 	else:
 		return render_template("viewquestions.html", cresults = None)
 
-
-def examtypecheck(tidoption):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT test_type from teachers where test_id = %s and email = %s and uid = %s', (tidoption,session['email'],session['uid']))
-	callresults = cur.fetchone()
-	cur.close()
-	return callresults
-
 @app.route('/displayquestions', methods=['GET','POST'])
 @user_role_professor
 def displayquestions():
 	if request.method == 'POST':
 		tidoption = request.form['choosetid']
 		et = examtypecheck(tidoption)
-		if et['test_type'] == "objective":
+		if et[0] == "objective":
 			cur = mysql.connection.cursor()
 			cur.execute('SELECT * from questions where test_id = %s and uid = %s', (tidoption,session['uid']))
 			callresults = cur.fetchall()
@@ -872,6 +808,35 @@ def displayquestions():
 			callresults = cur.fetchall()
 			cur.close()
 			return render_template("displayquestionspractical.html", callresults = callresults)
+
+###################################################################
+
+
+##################################
+#### EXAM HISTORY ###############
+@app.route('/<email>/disptests')
+@user_role_professor
+def disptests(email):
+	if email == session['email']:
+		cur = mysql.connection.cursor()
+		results = cur.execute('select * from teachers where email = %s and uid = %s', (email,session['uid']))
+		results = cur.fetchall()
+		return render_template('disptests.html', tests=results)
+	else:
+		flash('You are not authorized', 'danger')
+		return redirect(url_for('professor_index'))
+
+############################################################
+
+
+def examtypecheck(tidoption):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT test_type from teachers where test_id = %s and email = %s and uid = %s', (tidoption,session['email'],session['uid']))
+	callresults = cur.fetchone()
+	cur.close()
+	return callresults
+
+
 
 @app.route('/viewstudentslogs', methods=['GET'])
 @user_role_professor
@@ -1485,17 +1450,7 @@ def student_results(email, testid):
 					scores.append(user['marks'])
 				return render_template('student_results_pqa.html', data=results, labels=names, values=scores)
 
-@app.route('/<email>/disptests')
-@user_role_professor
-def disptests(email):
-	if email == session['email']:
-		cur = mysql.connection.cursor()
-		results = cur.execute('select * from teachers where email = %s and uid = %s', (email,session['uid']))
-		results = cur.fetchall()
-		return render_template('disptests.html', tests=results)
-	else:
-		flash('You are not authorized', 'danger')
-		return redirect(url_for('professor_index'))
+
 
 @app.route('/<email>/student_test_history')
 @user_role_student
@@ -1552,3 +1507,4 @@ def professor_index():
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0",debug=True)
+ 
