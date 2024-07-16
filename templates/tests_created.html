@@ -22,10 +22,10 @@
 							 <tbody>
             {% for test in tests %}
                             <tr>
-								<td>{{test['test_id']}}</td>
-								<td>{{test['subject']}}</td>
-								<td>{{test['topic']}}</td>
-								<td><a class="btn btn-primary" href="/{{session.email}}/tests-created/{{test['test_id']}}">View Result</a></td>
+								<td>{{test[2]}}</td>
+								<td>{{test[9]}}</td>
+								<td>{{test[10]}}</td>
+								<td><a class="btn btn-primary" href="/{{session.email}}/tests-created/{{test[2]}}">View Result</a></td>
                              </tr>
             {% endfor %}
                                   </tbody>

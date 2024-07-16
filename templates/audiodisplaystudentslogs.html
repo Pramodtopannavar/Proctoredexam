@@ -21,18 +21,18 @@
 <tbody>
   {% for res in callresults %}
   <tr>
-  <td>{{res['name']}}</td>
-  <td>{{res['voice_db']}}</td>
+  <td>{{res[2]}}</td>
+  <td>{{res[4]}}</td>
   <td>
-  {% if res['voice_db'] < 10 %}
+  {% if res[4] < 10 %}
   <h6 class="text-primary"> Normal</h6>
-  {% elif res['voice_db'] >= 10 and res['voice_db'] < 20 %}
+  {% elif res[4] >= 10 and res[4] < 20 %}
   <h6 class="text-muted">Little Disturbance</h6>
   {% else %}
   <h6 class="text-danger">More Disturbance</h6>
   {% endif %}
   </td>
-  <td>{{res['log_time']}}</td>
+  <td>{{res[11]}}</td>
   </tr>
   {% endfor %}
 </tbody>

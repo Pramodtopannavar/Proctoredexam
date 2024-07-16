@@ -851,9 +851,10 @@ def share_details_emails():
 		calc = request.form['calc']
 		emailssharelist = request.form['emailssharelist']
 		msg1 = Message('EXAM DETAILS - AITM EXAM SYSTEM', sender = sender, recipients = [emailssharelist])
-		msg1.body = " ".join(["EXAM-ID:", tid, "SUBJECT:", subject, "TOPIC:", topic, "DURATION:", duration, "START", start, "END", end, "PASSWORD", password, "NEGATIVE MARKS in %:", neg_marks,"CALCULATOR ALLOWED:",calc ]) 
+		msg1.body = " ".join(["EXAM-ID:", tid, "\nSUBJECT:", subject, "\nTOPIC:", topic, "\nDURATION(sec):", duration, "\nSTART:", start, "\nEND:", end, "\nPASSWORD:", password, "\nNEGATIVE MARKS in %:", neg_marks,"\nCALCULATOR ALLOWED:",calc ]) 
 		mail.send(msg1)
 		flash('Emails sended sucessfully!', 'success')
+		return redirect(url_for('professor_index'))
 	return render_template('share_details.html')
 
 ############################################################
@@ -892,8 +893,265 @@ def displaystudentsdetails():
 		cur.close()
 		return render_template("displaystudentsdetails.html", callresults = callresults)
 
+@app.route('/studentmonitoringstats/<testid>/<email>', methods=['GET','POST'])
+@user_role_professor
+def studentmonitoringstats(testid,email):
+	return render_template("stat_student_monitoring.html", testid = testid, email = email)
+
+@app.route('/displaystudentslogs/<testid>/<email>', methods=['GET','POST'])
+@user_role_professor
+def displaystudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT * from proctoring_log where test_id = %s and email = %s', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	return render_template("displaystudentslogs.html", testid = testid, email = email, callresults = callresults)
+
+@app.route('/wineventstudentslogs/<testid>/<email>', methods=['GET','POST'])
+@user_role_professor
+def wineventstudentslogs(testid,email):
+	callresults = displaywinstudentslogs(testid,email)
+	return render_template("wineventstudentlog.html", testid = testid, email = email, callresults = callresults)
+
+@app.route('/mobdisplaystudentslogs/<testid>/<email>', methods=['GET','POST'])
+@user_role_professor
+def mobdisplaystudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT * from proctoring_log where test_id = %s and email = %s and phone_detection = 1', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	return render_template("mobdisplaystudentslogs.html", testid = testid, email = email, callresults = callresults)
+
+@app.route('/persondisplaystudentslogs/<testid>/<email>', methods=['GET','POST'])
+@user_role_professor
+def persondisplaystudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT * from proctoring_log where test_id = %s and email = %s and person_status = 1', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	return render_template("persondisplaystudentslogs.html",testid = testid, email = email, callresults = callresults)
+
+
+
+@app.route('/audiodisplaystudentslogs/<testid>/<email>', methods=['GET','POST'])
+@user_role_professor
+def audiodisplaystudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT * from proctoring_log where test_id = %s and email = %s', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	return render_template("audiodisplaystudentslogs.html", testid = testid, email = email, callresults = callresults)
+
+def displaywinstudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT * from window_estimation_log where test_id = %s and email = %s and window_event = 1', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	return callresults
+
+def countwinstudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT COUNT(*) as wincount from window_estimation_log where test_id = %s and email = %s and window_event = 1', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	winc = [i[0] for i in callresults]
+	return winc
+
+def countMobStudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT COUNT(*) as mobcount from proctoring_log where test_id = %s and email = %s and phone_detection = 1', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	mobc = [i['mobcount'] for i in callresults]
+	return mobc
+
+def countMTOPstudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT COUNT(*) as percount from proctoring_log where test_id = %s and email = %s and person_status = 1', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	perc = [i['percount'] for i in callresults]
+	return perc
+
+def countMTOPstudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT COUNT(*) as percount from proctoring_log where test_id = %s and email = %s and person_status = 1', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	perc = [i['percount'] for i in callresults]
+	return perc
+
+def countTotalstudentslogs(testid,email):
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT COUNT(*) as total from proctoring_log where test_id = %s and email = %s', (testid, email))
+	callresults = cur.fetchall()
+	cur.close()
+	tot = [i['total'] for i in callresults]
+	return tot
+
 
 #######################################################
+################   Results  #########################
+
+@app.route('/<email>/tests-created')
+@user_role_professor
+def tests_created(email):
+	if email == session['email']:
+		cur = mysql.connection.cursor()
+		results = cur.execute('select * from teachers where email = %s and uid = %s and show_ans = 1', (email,session['uid']))
+		results = cur.fetchall()
+		return render_template('tests_created.html', tests=results)
+	else:
+		flash('You are not authorized', 'danger')
+		return redirect(url_for('professor_index'))
+
+def marks_calc(email,testid):
+		cur = mysql.connection.cursor()
+		results=cur.execute("select neg_marks from teachers where test_id=%s",[testid])
+		results=cur.fetchone()
+		negm = results[0]
+		return neg_marks(email,testid,negm) 
+
+def neg_marks(email,testid,negm):
+	cur=mysql.connection.cursor()
+	results = cur.execute("select marks,q.qid as qid, \
+				q.ans as correct, ifnull(s.ans,0) as marked from questions q inner join \
+				students s on  s.test_id = q.test_id and s.test_id = %s \
+				and s.email = %s and s.qid = q.qid group by q.qid \
+				order by q.qid asc", (testid, email))
+	data=cur.fetchall()
+
+	sum=0.0
+	for i in range(results):
+		if(str(data[i]['marked']).upper() != '0'):
+			if(str(data[i]['marked']).upper() != str(data[i]['correct']).upper()):
+				sum=sum - (negm/100) * int(data[i]['marks'])
+			elif(str(data[i]['marked']).upper() == str(data[i]['correct']).upper()):
+				sum+=int(data[i]['marks'])
+	return sum
+
+@app.route('/<email>/tests-created/<testid>', methods=['POST', 'GET'])
+@user_role_professor
+def student_results(email, testid):
+    if email == session['email']:
+        et = examtypecheck(testid)
+        if et is None:
+            # Handle the case where examtypecheck returns None
+            return "Error: Invalid test ID or test type not found.", 400
+        
+        if request.method == 'GET':
+            if et[0] == "objective":
+                cur = mysql.connection.cursor()
+                results = cur.execute(
+                    'SELECT users.name as name, users.email as email, studentTestInfo.test_id as test_id '
+                    'FROM studentTestInfo, users '
+                    'WHERE test_id = %s AND completed = 1 AND users.user_type = %s AND studentTestInfo.email = users.email',
+                    (testid, 'student')
+                )
+                results = cur.fetchall()
+                cur.close()
+                
+                final = []
+                names = []
+                scores = []
+                count = 1
+                
+                for user in results:
+                    user_list = list(user)  # Convert tuple to list
+                    score = marks_calc(user_list[1], user_list[2])
+                    user_list.append(count)  # srno
+                    user_list.append(score)  # marks
+                    final.append([count, user_list[0], score])
+                    names.append(user_list[0])
+                    scores.append(score)
+                    count += 1
+                
+                return render_template('student_results.html', data=final, labels=names, values=scores)
+            else:
+                return "Error: Unsupported test type.", 400
+
+###########################################################################################################
+
+
+#########################    PUBLISH RESULTS #################################
+
+@app.route("/publish-results-testid", methods=['GET', 'POST'])
+@user_role_professor
+def publish_results_testid():
+    cur = mysql.connection.cursor()
+    
+    # Debugging: Print session variables
+    print(f"Session email: {session['email']}")
+    print(f"Session uid: {session['uid']}")
+    
+    # Execute the query
+    results = cur.execute('SELECT * FROM teachers WHERE test_type = %s AND show_ans = 0 AND email = %s AND uid = %s', ("objective", session['email'], session['uid']))
+    cresults = cur.fetchall()
+    print(f"Fetched results: {cresults}")
+    if results > 0:
+        
+        
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+        testids = []
+        
+        for a in cresults:
+            # Debugging: Print each date comparison
+            test_date = datetime.strptime(str(a[5]), "%Y-%m-%d %H:%M:%S")
+            print(f"Test date: {test_date}, Current date: {now}")
+            
+            if test_date < now:
+                testids.append(a[2])
+        
+        cur.close()
+        
+        # Debugging: Print test IDs to be displayed
+        print(f"Test IDs: {testids}")
+        
+        return render_template("publish_results_testid.html", cresults=testids)
+    else:
+        cur.close()
+        return render_template("publish_results_testid.html", cresults=None)
+
+
+
+
+@app.route('/viewresults', methods=['GET','POST'])
+@user_role_professor
+def viewresults():
+	if request.method == 'POST':
+		tidoption = request.form['choosetid']
+		et = examtypecheck(tidoption)
+		if et['test_type'] == "subjective":
+			cur = mysql.connection.cursor()
+			cur.execute('SELECT SUM(marks) as marks, email from longtest where test_id = %s group by email', ([tidoption]))
+			callresults = cur.fetchall()
+			cur.close()
+			return render_template("publish_viewresults.html", callresults = callresults, tid = tidoption)
+		elif et['test_type'] == "practical":
+			cur = mysql.connection.cursor()
+			cur.execute('SELECT SUM(marks) as marks, email from practicaltest where test_id = %s group by email', ([tidoption]))
+			callresults = cur.fetchall()
+			cur.close()
+			return render_template("publish_viewresults.html", callresults = callresults, tid = tidoption)
+		else:
+			flash("Some Error Occured!")
+			return redirect(url_for('publish-results-testid'))
+
+@app.route('/publish_results', methods=['GET','POST'])
+@user_role_professor
+def publish_results():
+	if request.method == 'POST':
+		tidoption = request.form['testidsp']
+		cur = mysql.connection.cursor()
+		cur.execute('UPDATE teachers set show_ans = 1 where test_id = %s', ([tidoption]))
+		mysql.connection.commit()
+		cur.close()
+		flash("Results published sucessfully!")
+		return redirect(url_for('professor_index'))
+
+
+#################################################################################
 
 @app.route('/insertmarkstid', methods=['GET'])
 @user_role_professor
@@ -984,57 +1242,8 @@ def insertpracmarks(testid,email):
 		flash('Marks Entered Sucessfully!', 'success')
 		return redirect(url_for('insertmarkstid'))
 
-def displaywinstudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT * from window_estimation_log where test_id = %s and email = %s and window_event = 1', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	return callresults
 
-def countwinstudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT COUNT(*) as wincount from window_estimation_log where test_id = %s and email = %s and window_event = 1', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	winc = [i['wincount'] for i in callresults]
-	return winc
 
-def countMobStudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT COUNT(*) as mobcount from proctoring_log where test_id = %s and email = %s and phone_detection = 1', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	mobc = [i['mobcount'] for i in callresults]
-	return mobc
-
-def countMTOPstudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT COUNT(*) as percount from proctoring_log where test_id = %s and email = %s and person_status = 1', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	perc = [i['percount'] for i in callresults]
-	return perc
-
-def countMTOPstudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT COUNT(*) as percount from proctoring_log where test_id = %s and email = %s and person_status = 1', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	perc = [i['percount'] for i in callresults]
-	return perc
-
-def countTotalstudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT COUNT(*) as total from proctoring_log where test_id = %s and email = %s', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	tot = [i['total'] for i in callresults]
-	return tot
-
-@app.route('/studentmonitoringstats/<testid>/<email>', methods=['GET','POST'])
-@user_role_professor
-def studentmonitoringstats(testid,email):
-	return render_template("stat_student_monitoring.html", testid = testid, email = email)
 
 @app.route('/ajaxstudentmonitoringstats/<testid>/<email>', methods=['GET','POST'])
 @user_role_professor
@@ -1045,104 +1254,19 @@ def ajaxstudentmonitoringstats(testid,email):
 	tot = countTotalstudentslogs(testid,email)
 	return jsonify({"win":win,"mob":mob,"per":per,"tot":tot})
 
-@app.route('/displaystudentslogs/<testid>/<email>', methods=['GET','POST'])
-@user_role_professor
-def displaystudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT * from proctoring_log where test_id = %s and email = %s', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	return render_template("displaystudentslogs.html", testid = testid, email = email, callresults = callresults)
-
-@app.route('/mobdisplaystudentslogs/<testid>/<email>', methods=['GET','POST'])
-@user_role_professor
-def mobdisplaystudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT * from proctoring_log where test_id = %s and email = %s and phone_detection = 1', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	return render_template("mobdisplaystudentslogs.html", testid = testid, email = email, callresults = callresults)
-
-@app.route('/persondisplaystudentslogs/<testid>/<email>', methods=['GET','POST'])
-@user_role_professor
-def persondisplaystudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT * from proctoring_log where test_id = %s and email = %s and person_status = 1', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	return render_template("persondisplaystudentslogs.html",testid = testid, email = email, callresults = callresults)
-
-@app.route('/audiodisplaystudentslogs/<testid>/<email>', methods=['GET','POST'])
-@user_role_professor
-def audiodisplaystudentslogs(testid,email):
-	cur = mysql.connection.cursor()
-	cur.execute('SELECT * from proctoring_log where test_id = %s and email = %s', (testid, email))
-	callresults = cur.fetchall()
-	cur.close()
-	return render_template("audiodisplaystudentslogs.html", testid = testid, email = email, callresults = callresults)
-
-@app.route('/wineventstudentslogs/<testid>/<email>', methods=['GET','POST'])
-@user_role_professor
-def wineventstudentslogs(testid,email):
-	callresults = displaywinstudentslogs(testid,email)
-	return render_template("wineventstudentlog.html", testid = testid, email = email, callresults = callresults)
 
 
 
 
 
-@app.route("/publish-results-testid", methods=['GET','POST'])
-@user_role_professor
-def publish_results_testid():
-	cur = mysql.connection.cursor()
-	results = cur.execute('SELECT * from teachers where test_type != %s AND show_ans = 0 AND email = %s AND uid = %s', ("objectve", session['email'], session['uid']))
-	if results > 0:
-		cresults = cur.fetchall()
-		now = datetime.now()
-		now = now.strftime("%Y-%m-%d %H:%M:%S")
-		now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
-		testids = []
-		for a in cresults:
-			if datetime.strptime(str(a['end']),"%Y-%m-%d %H:%M:%S") < now:
-				testids.append(a['test_id'])
-		cur.close()
-		return render_template("publish_results_testid.html", cresults = testids)
-	else:
-		return render_template("publish_results_testid.html", cresults = None)
 
-@app.route('/viewresults', methods=['GET','POST'])
-@user_role_professor
-def viewresults():
-	if request.method == 'POST':
-		tidoption = request.form['choosetid']
-		et = examtypecheck(tidoption)
-		if et['test_type'] == "subjective":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT SUM(marks) as marks, email from longtest where test_id = %s group by email', ([tidoption]))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("publish_viewresults.html", callresults = callresults, tid = tidoption)
-		elif et['test_type'] == "practical":
-			cur = mysql.connection.cursor()
-			cur.execute('SELECT SUM(marks) as marks, email from practicaltest where test_id = %s group by email', ([tidoption]))
-			callresults = cur.fetchall()
-			cur.close()
-			return render_template("publish_viewresults.html", callresults = callresults, tid = tidoption)
-		else:
-			flash("Some Error Occured!")
-			return redirect(url_for('publish-results-testid'))
 
-@app.route('/publish_results', methods=['GET','POST'])
-@user_role_professor
-def publish_results():
-	if request.method == 'POST':
-		tidoption = request.form['testidsp']
-		cur = mysql.connection.cursor()
-		cur.execute('UPDATE teachers set show_ans = 1 where test_id = %s', ([tidoption]))
-		mysql.connection.commit()
-		cur.close()
-		flash("Results published sucessfully!")
-		return redirect(url_for('professor_index'))
+
+
+
+
+
+
 
 @app.route('/test_update_time', methods=['GET','POST'])
 @user_role_student
@@ -1321,23 +1445,7 @@ def check_result(email, testid):
 	else:
 		return redirect(url_for('student_index'))
 
-def neg_marks(email,testid,negm):
-	cur=mysql.connection.cursor()
-	results = cur.execute("select marks,q.qid as qid, \
-				q.ans as correct, ifnull(s.ans,0) as marked from questions q inner join \
-				students s on  s.test_id = q.test_id and s.test_id = %s \
-				and s.email = %s and s.qid = q.qid group by q.qid \
-				order by q.qid asc", (testid, email))
-	data=cur.fetchall()
 
-	sum=0.0
-	for i in range(results):
-		if(str(data[i]['marked']).upper() != '0'):
-			if(str(data[i]['marked']).upper() != str(data[i]['correct']).upper()):
-				sum=sum - (negm/100) * int(data[i]['marks'])
-			elif(str(data[i]['marked']).upper() == str(data[i]['correct']).upper()):
-				sum+=int(data[i]['marks'])
-	return sum
 
 def totmarks(email,tests): 
 	cur = mysql.connection.cursor()
@@ -1349,12 +1457,7 @@ def totmarks(email,tests):
 		data = neg_marks(email,testid,negm)
 		return data
 
-def marks_calc(email,testid):
-		cur = mysql.connection.cursor()
-		results=cur.execute("select neg_marks from teachers where test_id=%s",[testid])
-		results=cur.fetchone()
-		negm = results['neg_marks']
-		return neg_marks(email,testid,negm) 
+
 		
 @app.route('/<email>/tests-given', methods = ['POST','GET'])
 @user_role_student
@@ -1401,65 +1504,6 @@ def tests_given(email):
 	else:
 		flash('You are not authorized', 'danger')
 		return redirect(url_for('student_index'))
-
-@app.route('/<email>/tests-created')
-@user_role_professor
-def tests_created(email):
-	if email == session['email']:
-		cur = mysql.connection.cursor()
-		results = cur.execute('select * from teachers where email = %s and uid = %s and show_ans = 1', (email,session['uid']))
-		results = cur.fetchall()
-		return render_template('tests_created.html', tests=results)
-	else:
-		flash('You are not authorized', 'danger')
-		return redirect(url_for('professor_index'))
-
-@app.route('/<email>/tests-created/<testid>', methods = ['POST','GET'])
-@user_role_professor
-def student_results(email, testid):
-	if email == session['email']:
-		et = examtypecheck(testid)
-		if request.method =='GET':
-			if et['test_type'] == "objective":
-				cur = mysql.connection.cursor()
-				results = cur.execute('select users.name as name,users.email as email, studentTestInfo.test_id as test_id from studentTestInfo, users where test_id = %s and completed = 1 and  users.user_type = %s and studentTestInfo.email=users.email ', (testid,'student'))
-				results = cur.fetchall()
-				cur.close()
-				final = []
-				names = []
-				scores = []
-				count = 1
-				for user in results:
-					score = marks_calc(user['email'], user['test_id'])
-					user['srno'] = count
-					user['marks'] = score
-					final.append([count, user['name'], score])
-					names.append(user['name'])
-					scores.append(score)
-					count+=1
-				return render_template('student_results.html', data=final, labels=names, values=scores)
-			elif et['test_type'] == "subjective":
-				cur = mysql.connection.cursor()
-				results = cur.execute('select users.name as name,users.email as email, longtest.test_id as test_id, SUM(longtest.marks) AS marks from longtest, users where longtest.test_id = %s  and  users.user_type = %s and longtest.email=users.email', (testid,'student'))
-				results = cur.fetchall()
-				cur.close()
-				names = []
-				scores = []
-				for user in results:
-					names.append(user['name'])
-					scores.append(user['marks'])
-				return render_template('student_results_lqa.html', data=results, labels=names, values=scores)
-			elif et['test_type'] == "practical":
-				cur = mysql.connection.cursor()
-				results = cur.execute('select users.name as name,users.email as email, practicaltest.test_id as test_id, SUM(practicaltest.marks) AS marks from practicaltest, users where practicaltest.test_id = %s  and  users.user_type = %s and practicaltest.email=users.email', (testid,'student'))
-				results = cur.fetchall()
-				cur.close()
-				names = []
-				scores = []
-				for user in results:
-					names.append(user['name'])
-					scores.append(user['marks'])
-				return render_template('student_results_pqa.html', data=results, labels=names, values=scores)
 
 
 

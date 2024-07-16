@@ -15,19 +15,19 @@
       <div class="col-6"> 
       <div class="card card-body shadow-sm mb-4">
         <div class="form-group">
-        <img src="data:image/jpeg;base64,{{ res['img_log'] }}" alt="img_data" width="320px" height="320px"  id="imgslot"/><br>
+        <img src="data:image/jpeg;base64,{{ res[5] }}" alt="img_data" width="320px" height="320px"  id="imgslot"/><br>
         </div>
 
         <div class="form-group">
         <h5 class="h5">
           <span class="fas fa-eye"></span> EYES:
-        {% if res['user_movements_eyes'] == 1 %}
+        {% if res[8] == 1 %}
         BLINKING
-        {% elif res['user_movements_eyes'] == 4 %}
+        {% elif res[8] == 4 %}
         LOOKING RIGHT
-        {% elif res['user_movements_eyes'] == 3 %}
+        {% elif res[8] == 3 %}
         LOOKING LEFT
-        {% elif res['user_movements_eyes'] == 2 %}
+        {% elif res[8] == 2 %}
         LOOKING CENTER
         {% else %}
         NOT FOUND!
@@ -39,9 +39,9 @@
         <h5 class="h5">
           <span class="fas fa-user"></span>
           HEAD [UP/DOWN]:
-        {% if res['user_movements_updown'] == 1 %}
+        {% if res[6] == 1 %}
         UP
-        {% elif res['user_movements_updown'] == 2 %}
+        {% elif res[6] == 2 %}
         DOWN
         {% else %}
         NOT FOUND!
@@ -53,9 +53,9 @@
         <h5 class="h5">
           <span class="fas fa-user"></span>
           HEAD [LEFT/RIGHT]:
-        {% if res['user_movements_lr'] == 4 %}
+        {% if res[7] == 4 %}
         RIGHT
-        {% elif res['user_movements_lr'] == 3 %}
+        {% elif res[7] == 3 %}
         LEFT
         {% else %}
         NOT FOUND!
@@ -64,10 +64,10 @@
         </div>
 
         <div class="form-group">
-        {% if res['phone_detection'] == 1 %}
+        {% if res[9] == 1 %}
         <h5 class="text-danger"><span class="fas fa-mobile-alt"></span> MOBILE: MOBILE DETECTED!</h5>
        
-        {% elif res['phone_detection'] == 0 %}
+        {% elif res[9] == 0 %}
         <h5 class="h5"><span class="fas fa-mobile-alt"></span> MOBILE: NO MOBILE DETECTED!</h5>
 
         {% else %}
@@ -77,7 +77,7 @@
         </div>
 
         <div class="form-group">
-        {% if res['person_status'] == 1 %}
+        {% if res[10] == 1 %}
         <h5 class="text-danger"><span class="fas fa-people-carry"></span> PERSON: MORE THAN 1 PERSON DETECTED</h5>
 
         {% else %}
@@ -88,7 +88,7 @@
 
         <div class="form-group">
           <h5 class="h5">
-          <span class="fas fa-clock"></span> TRANSACTION TIME: {{res['log_time']}}
+          <span class="fas fa-clock"></span> TRANSACTION TIME: {{res[11]}}
       </h5>
         </div>
       </div>
