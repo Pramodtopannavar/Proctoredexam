@@ -1459,14 +1459,43 @@ def totmarks(email,tests):
 
 
 		
+
+
+
+
+######################################################################################
+######################### EXAM HISTORY (STUDENT ######################################
+
+@app.route('/<email>/student_test_history')
+@user_role_student
+def student_test_history(email):
+	if email == session['email']:
+		cur = mysql.connection.cursor()
+		results = cur.execute('SELECT a.test_id, b.subject, b.topic \
+			from studenttestinfo a, teachers b where a.test_id = b.test_id and a.email=%s  \
+			and a.completed=1', [email])
+		results = cur.fetchall()
+		return render_template('student_test_history.html', tests=results)
+	else:
+		flash('You are not authorized', 'danger')
+		return redirect(url_for('student_index'))
+
+#######################################################################################
+#######################################################################################
+
+
+######################################################################################
+########################### RESULTS (STUDENT) ########################################
+
 @app.route('/<email>/tests-given', methods = ['POST','GET'])
 @user_role_student
 def tests_given(email):
 	if request.method == "GET":
 		if email == session['email']:
 			cur = mysql.connection.cursor()
-			resultsTestids = cur.execute('select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = %s and studenttestinfo.uid = %s and studenttestinfo.completed=1 and teachers.test_id = studenttestinfo.test_id and teachers.show_ans = 1 ', (session['email'], session['uid']))
+			resultsTestids = cur.execute('select studenttestinfo.test_id as test_id from studenttestinfo,teachers where studenttestinfo.email = %s AND studenttestinfo.uid = %s AND studenttestinfo.completed=1 AND teachers.show_ans = 1 ', (session['email'], session['uid']))
 			resultsTestids = cur.fetchall()
+			#print(f"Student Test Info Results: {resultsTestids}")
 			cur.close()
 			return render_template('tests_given.html', cresults = resultsTestids)
 		else:
@@ -1478,7 +1507,7 @@ def tests_given(email):
 		cur.execute('SELECT test_type from teachers where test_id = %s',[tidoption])
 		callresults = cur.fetchone()
 		cur.close()
-		if callresults['test_type'] == "objective":
+		if callresults[0] == "objective":
 			cur = mysql.connection.cursor()
 			results = cur.execute('select distinct(students.test_id) as test_id, students.email as email, subject,topic,neg_marks from students,studenttestinfo,teachers where students.email = %s and teachers.test_type = %s and students.test_id = %s and students.test_id=teachers.test_id and students.test_id=studenttestinfo.test_id and studenttestinfo.completed=1', (email, "objective", tidoption))
 			results = cur.fetchall()
@@ -1486,7 +1515,7 @@ def tests_given(email):
 			results1 = []
 			studentResults = None
 			for a in results:
-				results1.append(neg_marks(a['email'],a['test_id'],a['neg_marks']))
+				results1.append(neg_marks(a[1],a[0],a[4]))
 				studentResults = zip(results,results1)
 			return render_template('obj_result_student.html', tests=studentResults)
 		elif callresults['test_type'] == "subjective":
@@ -1505,22 +1534,8 @@ def tests_given(email):
 		flash('You are not authorized', 'danger')
 		return redirect(url_for('student_index'))
 
-
-
-@app.route('/<email>/student_test_history')
-@user_role_student
-def student_test_history(email):
-	if email == session['email']:
-		cur = mysql.connection.cursor()
-		results = cur.execute('SELECT a.test_id, b.subject, b.topic \
-			from studenttestinfo a, teachers b where a.test_id = b.test_id and a.email=%s  \
-			and a.completed=1', [email])
-		results = cur.fetchall()
-		return render_template('student_test_history.html', tests=results)
-	else:
-		flash('You are not authorized', 'danger')
-		return redirect(url_for('student_index'))
-
+###################################################################################################
+##################################################################################################
 
 @app.route('/test_generate', methods=["POST"])
 @user_role_professor
