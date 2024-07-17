@@ -1357,13 +1357,13 @@ def give_test():
                     results = cur.fetchone()
                     
                     if results:
-                        is_completed = results[0]
-                        time_left = results[1]
+                        is_completed = results[1]
+                        time_left = results[0]
                         
                         if not is_completed and time_left <= duration:
                             duration = time_left
                             cur.execute('SELECT qid, ans FROM students WHERE email = %s AND test_id = %s AND uid = %s', (session['email'], test_id, session['uid']))
-                            marked_ans = {row['qid']: row['ans'] for row in cur.fetchall()}
+                            marked_ans = {row[0]: row[1] for row in cur.fetchall()}
                             marked_ans = json.dumps(marked_ans)
                     else:
                         cur.execute('INSERT INTO studentTestInfo (email, test_id, time_left, uid) VALUES (%s, %s, SEC_TO_TIME(%s), %s)', (session['email'], test_id, duration, session['uid']))
@@ -1373,13 +1373,13 @@ def give_test():
                         results = cur.fetchone()
                         
                         if results:
-                            is_completed = results[0]
-                            time_left = results[1]
-                            
+                            is_completed = results[1]
+                            time_left = results[0]
+                        
                             if not is_completed and time_left <= duration:
                                 duration = time_left
                                 cur.execute('SELECT * FROM students WHERE email = %s AND test_id = %s AND uid = %s', (session['email'], test_id, session['uid']))
-                                marked_ans = {row['qid']: row['ans'] for row in cur.fetchall()}
+                                marked_ans = {row[3]: row[4] for row in cur.fetchall()}
                                 marked_ans = json.dumps(marked_ans)
                 else:
                     if now < start:
@@ -1397,12 +1397,69 @@ def give_test():
     
     return render_template('give_test.html', form=form)
 
-@app.route('/give-test/<testid>', methods=['GET', 'POST'])
+
+@app.route('/calc')
+def calc():
+	return render_template('calc.html')
+
+
+@app.route('/give-test/<testid>', methods=['GET','POST'])
 @user_role_student
 def test(testid):
-    
-    return render_template('testquiz.html' )
-
+	cur = mysql.connection.cursor()
+	cur.execute('SELECT test_type from teachers where test_id = %s ', [testid])
+	callresults = cur.fetchone()
+	cur.close()
+	if callresults[0] == "objective":
+		global duration, marked_ans, calc, subject, topic, proctortype
+		if request.method == 'GET':
+			try:
+				data = {'duration': duration, 'marks': '', 'q': '', 'a': '', 'b':'','c':'','d':'' }
+				return render_template('testquiz.html' ,**data, answers=marked_ans, calc=calc, subject=subject, topic=topic, tid=testid, proctortype=proctortype)
+			except:
+				return redirect(url_for('give_test'))
+		else:
+			cur = mysql.connection.cursor()
+			flag = request.form['flag']
+			if flag == 'get':
+				num = request.form['no']
+				results = cur.execute('SELECT test_id,qid,q,a,b,c,d,ans,marks from questions where test_id = %s and qid =%s',(testid, num))
+				data = cur.fetchone()
+				if data:
+					del data[7]
+					cur.close()
+					return json.dumps(data)
+				return json.dumps({})
+			elif flag=='mark':
+				qid = request.form['qid']
+				ans = request.form['ans']
+				cur = mysql.connection.cursor()
+				results = cur.execute('SELECT * from students where test_id =%s and qid = %s and email = %s', (testid, qid, session['email']))
+				if results > 0:
+					cur.execute('UPDATE students set ans = %s where test_id = %s and qid = %s and email = %s', (testid, qid, session['email']))
+					mysql.connection.commit()
+					cur.close()
+				else:
+					cur.execute('INSERT INTO students(email,test_id,qid,ans,uid) values(%s,%s,%s,%s,%s)', (session['email'], testid, qid, ans, session['uid']))
+					mysql.connection.commit()
+					cur.close()
+			elif flag=='time':
+				cur = mysql.connection.cursor()
+				time_left = request.form['time']
+				try:
+					cur.execute('UPDATE studentTestInfo set time_left=SEC_TO_TIME(%s) where test_id = %s and email = %s and uid = %s and completed=0', (time_left, testid, session['email'], session['uid']))
+					mysql.connection.commit()
+					cur.close()
+					return json.dumps({'time':'fired'})
+				except:
+					pass
+			else:
+				cur = mysql.connection.cursor()
+				cur.execute('UPDATE studentTestInfo set completed=1,time_left=sec_to_time(0) where test_id = %s and email = %s and uid = %s', (testid, session['email'],session['uid']))
+				mysql.connection.commit()
+				cur.close()
+				flash("Exam submitted successfully", 'info')
+				return json.dumps({'sql':'fired'})
 
 
 
