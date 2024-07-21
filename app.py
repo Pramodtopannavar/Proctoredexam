@@ -29,6 +29,7 @@ from flask_cors import CORS, cross_origin
 #import camera
 from objective import ObjectiveTest
 from subjective import SubjectiveTest
+import nltk
 
 
 app = Flask(__name__)
@@ -93,43 +94,43 @@ def get_publishable_key():
     return jsonify(stripe_config)
 
 
-# @app.route('/video_feed', methods=['GET','POST'])
-# @user_role_student
-# def video_feed():
-# 	if request.method == "POST":
-# 		imgData = request.form['data[imgData]']
-# 		testid = request.form['data[testid]']
-# 		voice_db = request.form['data[voice_db]']
-# 		proctorData = camera.get_frame(imgData)
-# 		jpg_as_text = proctorData['jpg_as_text']
-# 		mob_status =proctorData['mob_status']
-# 		person_status = proctorData['person_status']
-# 		user_move1 = proctorData['user_move1']
-# 		user_move2 = proctorData['user_move2']
-# 		eye_movements = proctorData['eye_movements']
-# 		cur = mysql.connection.cursor()
-# 		results = cur.execute('INSERT INTO proctoring_log (email, name, test_id, voice_db, img_log, user_movements_updown, user_movements_lr, user_movements_eyes, phone_detection, person_status, uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-# 			(dict(session)['email'], dict(session)['name'], testid, voice_db, jpg_as_text, user_move1, user_move2, eye_movements, mob_status, person_status,dict(session)['uid']))
-# 		mysql.connection.commit()
-# 		cur.close()
-# 		if(results > 0):
-# 			return "recorded image of video"
-# 		else:
-# 			return "error in video"
+@app.route('/video_feed', methods=['GET','POST'])
+@user_role_student
+def video_feed():
+	if request.method == "POST":
+		imgData = request.form['data[imgData]']
+		testid = request.form['data[testid]']
+		voice_db = request.form['data[voice_db]']
+		proctorData = camera.get_frame(imgData)
+		jpg_as_text = proctorData['jpg_as_text']
+		mob_status =proctorData['mob_status']
+		person_status = proctorData['person_status']
+		user_move1 = proctorData['user_move1']
+		user_move2 = proctorData['user_move2']
+		eye_movements = proctorData['eye_movements']
+		cur = mysql.connection.cursor()
+		results = cur.execute('INSERT INTO proctoring_log (email, name, test_id, voice_db, img_log, user_movements_updown, user_movements_lr, user_movements_eyes, phone_detection, person_status, uid) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+			(dict(session)['email'], dict(session)['name'], testid, voice_db, jpg_as_text, user_move1, user_move2, eye_movements, mob_status, person_status,dict(session)['uid']))
+		mysql.connection.commit()
+		cur.close()
+		if(results > 0):
+			return "recorded image of video"
+		else:
+			return "error in video"
 
-# @app.route('/window_event', methods=['GET','POST'])
-# @user_role_student
-# def window_event():
-# 	if request.method == "POST":
-# 		testid = request.form['testid']
-# 		cur = mysql.connection.cursor()
-# 		results = cur.execute('INSERT INTO window_estimation_log (email, test_id, name, window_event, uid) values(%s,%s,%s,%s,%s)', (dict(session)['email'], testid, dict(session)['name'], 1, dict(session)['uid']))
-# 		mysql.connection.commit()
-# 		cur.close()
-# 		if(results > 0):
-# 			return "recorded window"
-# 		else:
-# 			return "error in window"
+@app.route('/window_event', methods=['GET','POST'])
+@user_role_student
+def window_event():
+	if request.method == "POST":
+		testid = request.form['testid']
+		cur = mysql.connection.cursor()
+		results = cur.execute('INSERT INTO window_estimation_log (email, test_id, name, window_event, uid) values(%s,%s,%s,%s,%s)', (dict(session)['email'], testid, dict(session)['name'], 1, dict(session)['uid']))
+		mysql.connection.commit()
+		cur.close()
+		if(results > 0):
+			return "recorded window"
+		else:
+			return "error in window"
 
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
@@ -157,9 +158,33 @@ def create_checkout_session():
     except Exception as e:
         return jsonify(error=str(e)), 403
 	
+@app.route("/livemonitoringtid")
+@user_role_professor
+def livemonitoringtid():
+	cur = mysql.connection.cursor()
+	results = cur.execute('SELECT * from teachers where email = %s and uid = %s and proctoring_type = 1', (session['email'], session['uid']))
+	if results > 0:
+		cresults = cur.fetchall()
+		now = datetime.now()
+		now = now.strftime("%Y-%m-%d %H:%M:%S")
+		now = datetime.strptime(now,"%Y-%m-%d %H:%M:%S")
+		testids = []
+		for a in cresults:
+			if datetime.strptime(str(a[4]),"%Y-%m-%d %H:%M:%S") <= now and datetime.strptime(str(a[5]),"%Y-%m-%d %H:%M:%S") >= now:
+				testids.append(a[2])
+		cur.close()
+		return render_template("livemonitoringtid.html", cresults = testids)
+	else:
+		return render_template("livemonitoringtid.html", cresults = None)
 
-
-
+@app.route('/live_monitoring', methods=['GET','POST'])
+@user_role_professor
+def live_monitoring():
+	if request.method == 'POST':
+		testid = request.form['choosetid']
+		return render_template('live_monitoring.html',testid = testid)
+	else:
+		return render_template('live_monitoring.html',testid = None)	
 
 
 
@@ -404,7 +429,7 @@ def report_student_email():
 	return render_template('report_student.html')
 ############################################################
 
-
+################# Generator Questions #######################################
 
 
 @app.route('/generate_test')
@@ -412,6 +437,31 @@ def report_student_email():
 def generate_test():
 	return render_template('generatetest.html')
 
+
+@app.route('/test_generate', methods=["GET", "POST"])
+@user_role_professor
+def test_generate():
+    if request.method == "POST":
+        inputText = request.form["itext"]
+        testType = request.form["test_type"]
+        noOfQues = request.form["noq"]
+        
+        try:
+            if testType == "objective":
+                objective_generator = ObjectiveTest(inputText, noOfQues)
+                question_list, answer_list = objective_generator.generate_test()
+                testgenerate = zip(question_list, answer_list)
+                return render_template('generatedtestdata.html', cresults=testgenerate)
+            elif testType == "subjective":
+                subjective_generator = SubjectiveTest(inputText, noOfQues)
+                question_list, answer_list = subjective_generator.generate_test()
+                testgenerate = zip(question_list, answer_list)
+                return render_template('generatedtestdata.html', cresults=testgenerate)
+            else:
+                return None
+        except ValueError as e:
+            flash(str(e))
+            return render_template('404.html')
 
 ########################################################
 #change password 
@@ -1423,13 +1473,23 @@ def test(testid):
 			flag = request.form['flag']
 			if flag == 'get':
 				num = request.form['no']
-				results = cur.execute('SELECT test_id,qid,q,a,b,c,d,ans,marks from questions where test_id = %s and qid =%s',(testid, num))
+				cur.execute('SELECT test_id,qid,q,a,b,c,d,ans,marks from questions where test_id = %s and qid =%s',(testid, num))
 				data = cur.fetchone()
 				if data:
-					del data[7]
+					response = {
+                        'qid': data[0],
+                        'q': data[1],
+                        'a': data[2],
+                        'b': data[3],
+                        'c': data[4],
+                        'd': data[5],
+                        'marks': data[6]
+                    }
 					cur.close()
-					return json.dumps(data)
+					return json.dumps(response)
 				return json.dumps({})
+
+				
 			elif flag=='mark':
 				qid = request.form['qid']
 				ans = request.form['ans']
@@ -1470,13 +1530,16 @@ def random_gen():
 		id = request.form['id']
 		cur = mysql.connection.cursor()
 		results = cur.execute('SELECT count(*) from questions where test_id = %s', [id])
-		if results > 0:
-			data = cur.fetchone()
-			total = data['count(*)']
+		data = cur.fetchone()
+		if data:
+			total = data[0]
 			nos = list(range(1,int(total)+1))
 			random.Random(id).shuffle(nos)
 			cur.close()
 			return json.dumps(nos)
+		else:
+			cur.close()
+			return json.dumps({'error':'no question found'})
 
 @app.route('/<email>/<testid>')
 @user_role_student
@@ -1594,29 +1657,7 @@ def tests_given(email):
 ###################################################################################################
 ##################################################################################################
 
-@app.route('/test_generate', methods=["POST"])
-@user_role_professor
-def test_generate():
-    try:
-        if request.method == "POST":
-            inputText = request.form["itext"]
-            testType = request.form["test_type"]
-            noOfQues = int(request.form["noq"])  # Ensure to convert to int if expecting a number
 
-            if testType == "objective":
-                objective_generator = ObjectiveTest(inputText, noOfQues)
-                question_list, answer_list = objective_generator.generate_test()
-            elif testType == "subjective":
-                subjective_generator = SubjectiveTest(inputText, noOfQues)
-                question_list, answer_list = subjective_generator.generate_test()
-            else:
-                return "Invalid test type selected."
-
-            testgenerate = list(zip(question_list, answer_list))
-            return render_template('generatedtestdata.html', cresults=testgenerate)
-    except Exception as e:
-        traceback.print_exc()  # Print the traceback to see where the error occurred
-        return f"An error occurred: {str(e)}"
 
 
 @app.route('/student_index')

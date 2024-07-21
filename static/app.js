@@ -376,26 +376,24 @@ var make_array = function() {
     }
 }
 
-function funSubmitExam()
-{
+
+function funSubmitExam() {
     var count = marked();
     var remaining = nos.length - count;
-  Swal.fire({
-  title: '<strong>FINISH EXAM</strong>',
-  icon: 'warning',
-  html:
-    '<table><tr><td>TOTAL QUESTIONS:</td><td>'+nos.length+'</td></tr><tr><td>ATTEMPTED:</td><td>'+count+'</td></tr><tr><td>REMAINING:</td><td>'+remaining+'</td></tr></table>' ,
-  showCloseButton: false,
-  showCancelButton: true,
-  focusConfirm: true,
-  confirmButtonText:
-    'OK, FINISH MY EXAM!',
-  confirmButtonAriaLabel: 'We are abide by rules!'
-}).then((result) => {
-  if (result.isConfirmed) {
-    finish_test();
-  }
-})
+    Swal.fire({
+        title: '<strong>FINISH EXAM</strong>',
+        icon: 'warning',
+        html: '<table><tr><td>TOTAL QUESTIONS:</td><td>' + nos.length + '</td></tr><tr><td>ATTEMPTED:</td><td>' + count + '</td></tr><tr><td>REMAINING:</td><td>' + remaining + '</td></tr></table>',
+        showCloseButton: false,
+        showCancelButton: true,
+        focusConfirm: true,
+        confirmButtonText: 'OK, FINISH MY EXAM!',
+        confirmButtonAriaLabel: 'We are abide by rules!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            finish_test();
+        }
+    });
 }
 
   window.addEventListener('selectstart', function(e){ e.preventDefault(); });
