@@ -8,6 +8,8 @@ const MARKED_BOOKMARKED=3;
 const SUBMITTED = 4;
 const SUBMITTED_BOOKMARKED = 5;
 
+
+//////// opening other tab monitoring ///////
 function mySnackBar() {
     var x = document.getElementById("snackbar");
     x.className = "show";
@@ -23,6 +25,8 @@ window.onfocus = function(event) {
                 });
 };
 
+////////////////////////////////////////////////////
+
   var stream = document.getElementById("stream");
   var capture = document.getElementById("capture");
   var cameraStream = null;
@@ -31,7 +35,7 @@ window.onfocus = function(event) {
   var values = 0;
   var length = null;
 
-  function startStreaming() {
+function startStreaming() {
   
     var mediaSupport = 'mediaDevices' in navigator;
     navigator.getUserMedia = navigator.getUserMedia ||
@@ -193,18 +197,7 @@ function startTimer(duration, display) {
     }, 1000);
 }
 
-function finish_test() {
-    $('#msg').addClass('alert-info');
-    $('#msg').append("Test submitted successfully");
-    $.ajax({
-        type: "POST",
-        dataType: "json",
-        data: {flag: 'completed'},
-        success: function(data) {
-            window.location.replace('/student_index');
-        }
-    });    
-}
+
 
 function sendTime() {
     var intervalTime = setInterval(function() {
@@ -273,6 +266,9 @@ $('#submit').on('click', function(e){
     $('#next').trigger('click');
 });
 
+
+/////////////////////Bookmark////////////////
+
 $('#bookmark').on('click', function(e){
     var status = data[curr+1].status;
     if( status == MARKED)
@@ -295,8 +291,9 @@ $('#bookmark').on('click', function(e){
     }
 
 });
+///////////////////////////////////////
 
-
+///////////////// options /////////////
 
 $('#options').on('click', 'td', function(){
     if ($(this).css("background-color") != 'rgba(0, 255, 0, 0.6)') {
@@ -314,23 +311,8 @@ $('#options').on('click', 'td', function(){
     }
 });
 
-var submit_overlay_display = true;
-$('#finish').on("click", function(e) {
-     funSubmitExam();
 
-});
 
-var marked = function() {
-    var count = 0;
-    for(var i=1;i<=nos.length;i++){
-        if(data[i].status == SUBMITTED || data[i].status == SUBMITTED_BOOKMARKED){
-            count++;
-            $('#question-list').empty();
-            ques_grid();
-        } 
-    }
-    return count;
-}
 
 var ques_grid = function() {
     document.getElementById("overlay").style.display = "block";
@@ -377,6 +359,36 @@ var make_array = function() {
 }
 
 
+////////////////////////////////FINISH BUTTON ////////////////////
+var submit_overlay_display = true;
+$('#finish').on("click", function(e) {
+    funSubmitExam();
+
+});
+
+function finish_test() {
+    $('#msg').addClass('alert-info');
+    $('#msg').append("Test submitted successfully");
+    $.ajax({
+        type: "POST",
+        dataType: "json",
+        data: {flag: 'completed'},
+        success: function(data) {
+            window.location.replace('/student_index');
+        }
+    });    
+}
+
+var marked = function() {
+    var count = 0;
+    for (var i = 1; i <= nos.length; i++) {
+        if (data[i].status == SUBMITTED || data[i].status == SUBMITTED_BOOKMARKED) {
+            count++;
+        }
+    }
+    return count;
+}
+
 function funSubmitExam() {
     var count = marked();
     var remaining = nos.length - count;
@@ -395,7 +407,10 @@ function funSubmitExam() {
         }
     });
 }
+/////////////////////////////////////////////////////////////////////////////
 
+
+///////// cut copy paste  disable /////////
   window.addEventListener('selectstart', function(e){ e.preventDefault(); });
   $(document).ready(function () {
       $('body').bind('select cut copy paste', function (e) {
@@ -407,13 +422,18 @@ function funSubmitExam() {
       });
   });
 
+
+  //////Screenshot disable //////
   document.addEventListener('keyup', (e) => {
   if (e.key == 'PrintScreen') {
   navigator.clipboard.writeText('');
-  alert('Screenshots disabled!');
+  alert('we are monitoring Do not take screenshot you will removed from exam');
+  e.preventDefault();
   }
   });
   
+
+  ////// print  screen disable///////
   document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && e.key == 'p') {
   alert('This section is not allowed to print or export to PDF');
@@ -423,3 +443,29 @@ function funSubmitExam() {
   }
   });
   
+/////////////////////////////////////////////////////
+  function enterFullScreen() {
+    const element = document.documentElement; // Target the whole page
+
+    if (element.requestFullscreen) {
+        element.requestFullscreen();
+    } else if (element.mozRequestFullScreen) { // Firefox
+        element.mozRequestFullScreen();
+    } else if (element.webkitRequestFullscreen) { // Chrome, Safari and Opera
+        element.webkitRequestFullscreen();
+    } else if (element.msRequestFullscreen) { // IE/Edge
+        element.msRequestFullscreen();
+    }
+}
+function showWarning() {
+    document.getElementById('warningMessage').style.display = 'block';
+  }
+// Call this function when the student starts the exam
+function startExam() {
+    
+    enterFullScreen();
+    // Additional logic to start the exam
+}
+
+document.getElementById('next').addEventListener('click', startExam); 
+

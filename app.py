@@ -376,7 +376,8 @@ def logout():
 		session.clear()
 		return redirect(url_for('login'))
 	else:
-		return "error"
+		session.clear()
+		return redirect(url_for('login'))
 #########################################
 
 
@@ -1062,23 +1063,32 @@ def marks_calc(email,testid):
 		negm = results[0]
 		return neg_marks(email,testid,negm) 
 
-def neg_marks(email,testid,negm):
-	cur=mysql.connection.cursor()
-	results = cur.execute("select marks,q.qid as qid, \
-				q.ans as correct, ifnull(s.ans,0) as marked from questions q inner join \
-				students s on  s.test_id = q.test_id and s.test_id = %s \
-				and s.email = %s and s.qid = q.qid group by q.qid \
-				order by q.qid asc", (testid, email))
-	data=cur.fetchall()
-
-	sum=0.0
-	for i in range(results):
-		if(str(data[i]['marked']).upper() != '0'):
-			if(str(data[i]['marked']).upper() != str(data[i]['correct']).upper()):
-				sum=sum - (negm/100) * int(data[i]['marks'])
-			elif(str(data[i]['marked']).upper() == str(data[i]['correct']).upper()):
-				sum+=int(data[i]['marks'])
-	return sum
+def neg_marks(email, testid, negm):
+    cur = mysql.connection.cursor()
+    query = """
+        SELECT q.marks, q.qid, q.ans AS correct, IFNULL(s.ans, 0) AS marked
+        FROM questions q
+        INNER JOIN students s ON s.test_id = q.test_id AND s.qid = q.qid
+        WHERE s.test_id = %s AND s.email = %s
+        GROUP BY q.qid
+        ORDER BY q.qid ASC
+    """
+    cur.execute(query, (testid, email))
+    data = cur.fetchall()
+    
+    total = 0.0
+    for row in data:
+        marks = row[0]
+        correct = row[2]
+        marked = row[3]
+        
+        if str(marked).upper() != '0':
+            if str(marked).upper() != str(correct).upper():
+                total -= (negm / 100) * int(marks)
+            elif str(marked).upper() == str(correct).upper():
+                total += int(marks)
+    
+    return total
 
 @app.route('/<email>/tests-created/<testid>', methods=['POST', 'GET'])
 @user_role_professor
@@ -1477,13 +1487,15 @@ def test(testid):
 				data = cur.fetchone()
 				if data:
 					response = {
-                        'qid': data[0],
-                        'q': data[1],
-                        'a': data[2],
-                        'b': data[3],
-                        'c': data[4],
-                        'd': data[5],
-                        'marks': data[6]
+						'test_id':data[0],
+                        'qid': data[1],
+                        'q': data[2],
+                        'a': data[3],
+                        'b': data[4],
+                        'c': data[5],
+                        'd': data[6],
+						'ans':data[7],
+                        'marks': data[8]
                     }
 					cur.close()
 					return json.dumps(response)
@@ -1513,6 +1525,13 @@ def test(testid):
 					return json.dumps({'time':'fired'})
 				except:
 					pass
+			elif flag == 'completed':
+				cur.execute('UPDATE studentTestInfo SET completed = 1, time_left = SEC_TO_TIME(0) WHERE test_id = %s AND email = %s AND uid = %s', (testid, session['email'], session['uid']))
+				mysql.connection.commit()
+				cur.close()
+				flash("Exam submitted successfully", 'info')
+				return json.dumps({'sql': 'fired'})
+
 			else:
 				cur = mysql.connection.cursor()
 				cur.execute('UPDATE studentTestInfo set completed=1,time_left=sec_to_time(0) where test_id = %s and email = %s and uid = %s', (testid, session['email'],session['uid']))
