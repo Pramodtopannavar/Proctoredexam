@@ -45,11 +45,11 @@ app.config['MYSQL_DB'] = 'quizapp'
 mysql = MySQL(app)
 
 # Configure Flask-Mail (update with your email configuration)
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
+app.config['MAIL_SERVER'] = ''
+app.config['MAIL_PORT'] = 
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'pramodtopannavar843@gmail.com'
-app.config['MAIL_PASSWORD'] = 'oqyn qcme pqss qyvg'
+app.config['MAIL_USERNAME'] = ''
+app.config['MAIL_PASSWORD'] = ''
 
 mail = Mail(app)
 
